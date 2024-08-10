@@ -1,9 +1,11 @@
+import { useMutation } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { signIn } from '@/api/sign-in'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,17 +17,25 @@ const signInForm = z.object({
 type signInForm = z.infer<typeof signInForm>
 
 export function SignIn() {
+  const [searchParams] = useSearchParams()
+
   const {
     register,
     handleSubmit,
     formState: { isSubmitting },
-  } = useForm<signInForm>()
+  } = useForm<signInForm>({
+    defaultValues: {
+      email: searchParams.get('email') ?? '',
+    },
+  })
 
-  async function handleSignin(data: signInForm) {
+  const { mutateAsync: authenticate } = useMutation({
+    mutationFn: signIn,
+  })
+
+  async function handleSignIn(data: signInForm) {
     try {
-      console.log(data)
-      throw new Error()
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await authenticate({ email: data.email })
       toast.success('Link de autenticação enviado para seu e-mail.')
     } catch {
       toast.error('Credenciais inválidas.')
@@ -49,7 +59,7 @@ export function SignIn() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(handleSignin)} className="space-y-4">
+          <form onSubmit={handleSubmit(handleSignIn)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Seu e-mail</Label>
               <Input id="email" type="email" {...register('email')} />
